@@ -13,6 +13,13 @@ app.get('/', (req, res) => {
   res.send(JSON.stringify({ text: myText }));
 });
 
+app.put('/', (req, res) => {
+  console.log(req.displayText);
+  const myText = getText();
+  console.log(myText);
+  res.send(JSON.stringify({ text: myText }));
+});
+
 const port = parseInt(process.env.PORT) || 8080;
 app.listen(port, () => {
   console.log(`helloworld: listening on port ${port}`);
