@@ -6,7 +6,7 @@ const port = parseInt(process.env.PORT) || 8080;
 
 const pword = process.env.PWORD || "localhost_password";
 
-const DEFAULT_TEXT = "Hello there!";
+const DEFAULT_TEXT = "Hello there, deployed from a git release!";
 const TEXT_FILE_PATH = "text.txt";
 
 app.use(bodyParser.json());
