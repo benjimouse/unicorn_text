@@ -12,31 +12,21 @@ const TEXT_FILE_PATH = "text.txt";
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
-  if(req.query.pword!=pword){
-    res.status(401, 'Not today you hacker you :)');
-    res.send("Not today you hacker you");
-  } else {
-    var date = new Date();
-    var current_time = date.getHours()+":"+date.getMinutes()+":"+ date.getSeconds();
-    //const myText = `Hello ${name}! It's ${current_time}`;
-    const myText = getText();
-    console.log(myText);
-    res.setHeader('content-type', 'application/json');
-    res.send(JSON.stringify({ text: myText }));
-  }
+  const unauthorizedResponse = { status: 401, message: 'Not today you hacker you :)' };
+  req.query.pword !== pword ? res.status(unauthorizedResponse.status).send(unauthorizedResponse.message) : null;
+  const myText = getText();
+  console.log(myText);
+  res.setHeader('content-type', 'application/json');
+  res.send(JSON.stringify({ text: myText }));
 });
-const StringDecoder = require("string_decoder").StringDecoder;
 
 app.put('/', (req, res) => {
-  if(req.query.pword!=pword){
-    res.status(401, 'Not today you hacker you :)');
-    res.send("Not today you hacker you");
-  } else {
-    const newText = req.body.displayText;
-    overWriteFile(newText);
-    res.setHeader('content-type', 'application/json');
-    res.send(JSON.stringify({ text: getText() }));
-  }
+  const unauthorizedResponse = { status: 401, message: 'Not today you hacker you :)' };
+  req.query.pword !== pword ? res.status(unauthorizedResponse.status).send(unauthorizedResponse.message) : null;
+  const newText = req.body.displayText;
+  overWriteFile(newText);
+  res.setHeader('content-type', 'application/json');
+  res.send(JSON.stringify({ text: getText() }));
 });
 
 app.listen(port, () => {
@@ -44,11 +34,26 @@ app.listen(port, () => {
 });
 
 const getText = () => {
-  if(!fs.existsSync(TEXT_FILE_PATH)){
+  try {
+    return fs.readFileSync(TEXT_FILE_PATH, 'utf8');
+  } catch (err) {
+    console.error(err);
+    overWriteFile(DEFAULT_TEXT);
+    return DEFAULT_TEXT;
+  }
+};
+
+const overWriteFile = (content) => {
+  try {
+    fs.writeFileSync(TEXT_FILE_PATH, content);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+fs.access(TEXT_FILE_PATH, fs.constants.F_OK, (err) => {
+  if (err) {
+    console.error(err);
     overWriteFile(DEFAULT_TEXT);
   }
-  return fs.readFileSync(TEXT_FILE_PATH, 'utf8');
- }
- const overWriteFile = (content) => {
-    fs.writeFileSync(TEXT_FILE_PATH, content);
- }
+});
