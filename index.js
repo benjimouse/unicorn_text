@@ -7,16 +7,14 @@ const port = parseInt(process.env.PORT) || 8080;
 
 const pword = process.env.PWORD || "localhost_password";
 
-const DEFAULT_TEXT = "Hello there, deployed from a git release!";
+const DEFAULT_TEXT = "Hello there!";
 const TEXT_FILE_PATH = "text.txt";
 
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.json(),
   transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' })
+    new winston.transports.Console()
   ]
 });
 
