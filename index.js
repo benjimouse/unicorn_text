@@ -1,4 +1,4 @@
-const express = require('express');
+import express from 'express';
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const winston = require('winston');
@@ -9,6 +9,14 @@ const pword = process.env.PWORD || "localhost_password";
 
 const DEFAULT_TEXT = "Hello there!";
 const TEXT_FILE_PATH = "text.txt";
+const admin = require('firebase-admin');
+
+const serviceAccount = JSON.parse(process.env.PRIVATE_KEY);
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+const db = admin.firestore();
 
 const logger = winston.createLogger({
   level: 'info',
@@ -24,47 +32,41 @@ logger.on('error', (err) => {
 
 app.use(bodyParser.json());
 
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
   const unauthorizedResponse = { status: 401, message: 'Not today you hacker you :)' };
   req.query.pword !== pword ? res.status(unauthorizedResponse.status).send(unauthorizedResponse.message) : null;
-  const myText = getText();
+  const myText = await getDocumentText();
   logger.info(myText);
   res.json({ text: myText });
 });
 
-app.put('/', (req, res) => {
+app.put('/', async (req, res) => {
   const unauthorizedResponse = { status: 401, message: 'Not today you hacker you :)' };
   req.query.pword !== pword ? res.status(unauthorizedResponse.status).send(unauthorizedResponse.message) : null;
   const newText = req.body.displayText;
-  overWriteFile(newText);
-  res.json({ text: getText() });
+  await updateDocumentText(newText);
+  res.json({ text: await getDocumentText() });
 });
 
 app.listen(port, () => {
   console.log(`Listening on port ${port}`);
 });
 
-const getText = () => {
+
+const getDocumentText = async () => {
   try {
-    return fs.readFileSync(TEXT_FILE_PATH, 'utf8');
+    const doc = await db.collection('myCollection').doc('myDoc').get();
+    return doc.exists ? doc.data().text : DEFAULT_TEXT;
   } catch (err) {
-    logger.error(err);
-    overWriteFile(DEFAULT_TEXT);
+    console.error(err);
     return DEFAULT_TEXT;
   }
 };
 
-const overWriteFile = (content) => {
+const updateDocumentText = async (content) => {
   try {
-    fs.writeFileSync(TEXT_FILE_PATH, content);
+    await db.collection('myCollection').doc('myDoc').set({ text: content });
   } catch (err) {
-    logger.error(err);
+    console.error(err);
   }
 };
-
-fs.access(TEXT_FILE_PATH, fs.constants.F_OK, (err) => {
-  if (err) {
-    logger.error(err);
-    overWriteFile(DEFAULT_TEXT);
-  }
-});
