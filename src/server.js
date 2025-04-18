@@ -5,6 +5,7 @@ const cors = require('cors');
 
 // Middleware
 app.use(cors()); // Enable CORS for all routes
+app.options('*', cors()); // Preflight requests
 app.use(express.json()); // Parse JSON requests
 
 // Routes
