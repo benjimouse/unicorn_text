@@ -1,6 +1,6 @@
 {
-    "name": "helloworld",
-    "description": "Simple hello world sample in Node",
+    "name": "unicorn-text",
+    "description": "API to serve and update scrolling text for my Pico W project.",
     "version": "1.0.0",
     "private": true,
     "main": "index.js",
@@ -9,14 +9,16 @@
         "debug": "node --inspect index.js"
     },
     "engines": {
-        "node": ">=12.0.0"
+        "node": ">=16.0.0"
     },
-    "author": "Google LLC",
+    "author": "Ben Best",
     "license": "Apache-2.0",
     "dependencies": {
-        "@google-cloud/firestore": "^6.5.0",
-        "express": "^4.17.1",
-        "fs": "^0.0.1-security",
+        "@google-cloud/firestore": "^7.11.0",
+        "body-parser": "^1.20.2",
+        "dotenv": "^16.5.0",
+        "express": "^4.18.2",
+        "firebase-admin": "^13.2.0",
         "winston": "^3.8.2"
     }
 }
