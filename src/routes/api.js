@@ -5,13 +5,23 @@ const { API_TOKEN } = require('../config/config');
 
 // Middleware to check Authorization header
 router.use((req, res, next) => {
-  const authHeader = req.headers['authorization'] || '';
-  const token = authHeader.split(' ')[1]; // 'Bearer TOKEN'
-  if (token !== API_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  next();
-});
+    const authHeader = req.headers['authorization'] || '';
+    console.log(`[Auth Middleware] Authorization Header: "${authHeader}"`);
+  
+    const token = authHeader.split(' ')[1];
+    console.log(`[Auth Middleware] Parsed token: "${token}"`);
+  
+    console.log(`[Auth Middleware] Expected token: "${API_TOKEN}"`);
+  
+    if (token !== API_TOKEN) {
+      console.warn('[Auth Middleware] ❌ Unauthorized Access Attempt');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  
+    console.log('[Auth Middleware] ✅ Authorized Request');
+    next();
+  });
+  
 
 // GET current display text
 router.get('/', async (req, res) => {
