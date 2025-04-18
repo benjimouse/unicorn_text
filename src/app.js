@@ -1,11 +1,14 @@
 const express = require('express');
+const cors = require('cors');
 const bodyParser = require('body-parser');
 const apiRoutes = require('./routes/api');
 
 const app = express();
 
-// Middleware
-app.use(bodyParser.json());
+// Global Middlewares
+app.use(cors());             // ← ENABLE CORS HERE
+app.options('*', cors());    // ← Handle preflight OPTIONS requests
+app.use(bodyParser.json());  // ← Parse JSON request bodies
 
 // Simple logging middleware
 app.use((req, res, next) => {
