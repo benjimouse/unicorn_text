@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { getDocumentText, updateDocumentText } = require('../services/firestore');
-const { API_TOKEN } = require('../config/config');
+const { getDocumentText, updateDocumentText } = require('services/firestore');
+const { API_TOKEN } = require('config');
 
 // Middleware to check Authorization header
 router.use((req, res, next) => {

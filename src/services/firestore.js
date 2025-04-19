@@ -1,68 +1,50 @@
-const admin = require('../utils/firebase'); // <- import the initialized admin instance
+const admin = require('firebase-admin');
+const { PRIVATE_KEY_JSON } = require('config');
+const { FieldValue } = require('firebase-admin/firestore');
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(PRIVATE_KEY_JSON),
+  });
+}
+
 const db = admin.firestore();
+const docRef = db.collection('unicorn').doc('status');
 
-// Collection and document names
-const COLLECTION_NAME = 'displayText';
-const DOCUMENT_NAME = 'current';
-
-
-/**
- * Fetch the current display text document from Firestore.
- */
-const getDocumentText = async () => {
+async function getDocumentText() {
   try {
-    const doc = await db.collection(COLLECTION_NAME).doc(DOCUMENT_NAME).get();
-    if (doc.exists) {
-      const data = doc.data();
-      return {
-        text: data.text || '',
-        updatedAt: data.updatedAt || null,
-        updatedBy: data.updatedBy || 'unknown',
-      };
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      return 'No text set!';
     }
-    return { text: '', updatedAt: null, updatedBy: 'unknown' };
-  } catch (err) {
-    console.error('❌ Firestore getDocumentText failed:', err);
-    throw err;
+    return doc.data().text || 'No text set!';
+  } catch (error) {
+    console.error('[Firestore] Failed to get document:', error);
+    return 'Error!';
   }
-};
+}
 
-/**
- * Update the display text document and log the update to history.
- *
- * @param {string} newText - New text to display.
- * @param {string} updatedBy - Who/what updated it.
- */
-const updateDocumentText = async (newText, updatedBy) => {
-  try {
-    const safeUpdatedBy = updatedBy && typeof updatedBy === 'string' && updatedBy.trim() !== ''
-      ? updatedBy
-      : 'unknown';
+async function updateDocumentText(text, updatedBy) {
+  const now = FieldValue.serverTimestamp();
 
-    const timestamp = new Date().toISOString();
+  await docRef.set(
+    {
+      text,
+      updatedAt: now,
+      updatedBy,
+    },
+    { merge: true }
+  );
 
-    const docRef = db.collection(COLLECTION_NAME).doc(DOCUMENT_NAME);
+  // Also log into subcollection
+  await docRef.collection('history').add({
+    text,
+    updatedAt: now,
+    updatedBy,
+  });
 
-    // Update the current text
-    await docRef.set({
-      text: newText,
-      updatedAt: timestamp,
-      updatedBy: safeUpdatedBy,
-    });
-
-    // Log the change into a subcollection "history"
-    await docRef.collection('history').add({
-      text: newText,
-      updatedAt: timestamp,
-      updatedBy: safeUpdatedBy,
-    });
-
-    console.log(`✅ Updated display text and logged to history at ${timestamp}`);
-  } catch (err) {
-    console.error('❌ Firestore updateDocumentText failed:', err);
-    throw err;
-  }
-};
+  console.log(`[Firestore] Text updated by ${updatedBy}`);
+}
 
 module.exports = {
   getDocumentText,
