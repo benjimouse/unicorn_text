@@ -1,68 +1,94 @@
+// src/middlewares/auth.js
 const { OAuth2Client } = require('google-auth-library');
-const { CLIENT_ID, DEVICE_BEARER_TOKEN, ALLOWED_USERS } = require('config');
+const { API_TOKEN, GOOGLE_CLIENT_ID, ALLOWED_USERS } = require('config');
 
-const client = new OAuth2Client(CLIENT_ID);
+const oauthClient = new OAuth2Client();
 
-async function allowBearerOrOAuth(req, res, next) {
-  const authHeader = req.headers['authorization'] || '';
-  const token = authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Missing Authorization token' });
-  }
-
-  if (token === DEVICE_BEARER_TOKEN) {
-    console.log('[Auth] Device Bearer Token accepted');
-    req.authenticatedAs = 'device';
-    return next();
-  }
-
+// This middleware allows either API_TOKEN or Google OAuth2
+const allowBearerOrOAuth = async (req, res, next) => {
   try {
-    const ticket = await client.verifyIdToken({
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.split(' ')[1];
+
+    if (!token) {
+      console.error('[Auth] ❌ Missing Authorization token');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Allow plain API token for read-only endpoints
+    if (token === API_TOKEN) {
+      console.log('[Auth] ✅ API token authenticated (read-only)');
+      return next();
+    }
+
+    // Otherwise try verifying as OAuth2
+    const ticket = await oauthClient.verifyIdToken({
       idToken: token,
-      audience: CLIENT_ID,
+      audience: GOOGLE_CLIENT_ID,
     });
+
     const payload = ticket.getPayload();
-    console.log('[Auth] Verified Google user:', payload.email);
+    const userEmail = payload.email;
 
-    req.authenticatedAs = payload.email;
-    return next();
-  } catch (error) {
-    console.error('[Auth] Token verification failed:', error);
-    return res.status(401).json({ error: 'Unauthorized' });
+    console.log(`[Auth] ✅ OAuth user authenticated: ${userEmail}`);
+
+    req.user = {
+      email: userEmail,
+      name: payload.name,
+      picture: payload.picture,
+    };
+
+    next();
+  } catch (err) {
+    console.error('[Auth] ❌ Token verification failed:', err);
+    res.status(401).json({ error: 'Unauthorized' });
   }
-}
+};
 
-async function requireOAuthAndCheckAllowlist(req, res, next) {
-  const authHeader = req.headers['authorization'] || '';
-  const token = authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Missing Authorization token' });
-  }
-
+// This middleware requires strict Google OAuth2 only (no API_TOKEN allowed)
+const requireOAuthOnly = async (req, res, next) => {
   try {
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    console.log('[Auth] Verified user:', payload.email);
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.split(' ')[1];
 
-    if (!ALLOWED_USERS.includes(payload.email)) {
-      console.warn(`[Auth] Unauthorized email: ${payload.email}`);
+    if (!token) {
+      console.error('[Auth] ❌ Missing Authorization token');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Do not accept API_TOKEN here!
+    if (token === API_TOKEN) {
+      console.error('[Auth] ❌ API token not allowed for this endpoint');
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    req.authenticatedAs = payload.email;
-    next();
-  } catch (error) {
-    console.error('[Auth] OAuth token invalid:', error);
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-}
+    // Must be a valid Google ID token
+    const ticket = await oauthClient.verifyIdToken({
+      idToken: token,
+      audience: GOOGLE_CLIENT_ID,
+    });
 
-module.exports = {
-  allowBearerOrOAuth,
-  requireOAuthAndCheckAllowlist,
+    const payload = ticket.getPayload();
+    const userEmail = payload.email;
+
+    console.log(`[Auth] ✅ OAuth user authenticated: ${userEmail}`);
+
+    if (!ALLOWED_USERS.includes(userEmail)) {
+      console.error(`[Auth] ❌ Unauthorized user: ${userEmail}`);
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    req.user = {
+      email: userEmail,
+      name: payload.name,
+      picture: payload.picture,
+    };
+
+    next();
+  } catch (err) {
+    console.error('[Auth] ❌ Token verification failed:', err);
+    res.status(401).json({ error: 'Unauthorized' });
+  }
 };
+
+module.exports = { allowBearerOrOAuth, requireOAuthOnly };
