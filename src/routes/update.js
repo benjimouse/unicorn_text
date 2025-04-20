@@ -4,7 +4,7 @@ const { requireOAuthOnly } = require('middlewares/auth');
 const { updateLimiter } = require('middlewares/rateLimiters');
 const { updateDocumentText } = require('services/firestore');
 
-router.put('/update', updateLimiter, requireOAuthOnly, async (req, res) => {
+router.put('/', updateLimiter, requireOAuthOnly, async (req, res) => {
   try {
     const { displayText } = req.body;
     const user = req.user?.email || 'unknown';
