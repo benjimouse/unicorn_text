@@ -1,14 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { getDocumentText } = require('services/firestore');
 const { allowBearerOrOAuth } = require('middlewares/auth');
+const { textLimiter } = require('middlewares/rateLimiters');
+const { getDocumentText } = require('services/firestore');
 
-router.get('/', allowBearerOrOAuth, async (req, res) => {
+router.get('/', textLimiter, allowBearerOrOAuth, async (req, res) => {
   try {
     const text = await getDocumentText();
     res.json({ text });
   } catch (error) {
-    console.error('[Text Route] Error fetching text:', error);
+    console.error('[Route] ❌ Failed to fetch text:', error);
     res.status(503).json({ error: 'Service unavailable' });
   }
 });

@@ -106,3 +106,5 @@ dist
 text.txt
 
 .npmrc
+
+local-test.sh
