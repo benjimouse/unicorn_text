@@ -15,13 +15,20 @@ async function getDocumentText() {
   try {
     const docRef = db.collection('text').doc('current');
     const doc = await docRef.get();
+
     if (!doc.exists) {
       return { text: 'No text set!', updatedBy: 'system', updatedAt: null };
     }
-    return doc.data(); // includes text, updatedBy, updatedA
+
+    const data = doc.data();
+    return {
+      text: data.text,
+      updatedBy: data.updatedBy || 'system',
+      updatedAt: data.updatedAt?.toDate().toISOString() || null
+    };
   } catch (error) {
     console.error('[Firestore] Failed to get document:', error);
-    return 'Error!';
+    return { text: 'Error!', updatedBy: 'system', updatedAt: null };
   }
 }
 
