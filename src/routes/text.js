@@ -6,11 +6,11 @@ const { getDocumentText } = require('services/firestore');
 
 router.get('/', textLimiter, allowBearerOrOAuth, async (req, res) => {
   try {
-    const text = await getDocumentText();
-    res.json({ text });
-  } catch (error) {
-    console.error('[Route] ❌ Failed to fetch text:', error);
-    res.status(503).json({ error: 'Service unavailable' });
+    const { text, updatedBy = 'unknown', updatedAt = null } = await getDocumentText();
+    res.json({ text, updatedBy, updatedAt });
+  } catch (err) {
+    console.error('❌ Failed to fetch text:', err);
+    res.status(500).json({ error: 'Failed to fetch text' });
   }
 });
 

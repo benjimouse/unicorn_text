@@ -13,11 +13,12 @@ const docRef = db.collection('unicorn').doc('status');
 
 async function getDocumentText() {
   try {
+    const docRef = db.collection('text').doc('current');
     const doc = await docRef.get();
     if (!doc.exists) {
-      return 'No text set!';
+      return { text: 'No text set!', updatedBy: 'system', updatedAt: null };
     }
-    return doc.data().text || 'No text set!';
+    return doc.data(); // includes text, updatedBy, updatedA
   } catch (error) {
     console.error('[Firestore] Failed to get document:', error);
     return 'Error!';
