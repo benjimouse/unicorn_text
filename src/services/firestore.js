@@ -13,7 +13,6 @@ const docRef = db.collection('unicorn').doc('status');
 
 async function getDocumentText() {
   try {
-    const docRef = db.collection('text').doc('current');
     const doc = await docRef.get();
     if (!doc.exists) {
       console.warn('[Firestore] Document does not exist');
